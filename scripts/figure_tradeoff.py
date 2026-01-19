@@ -1,12 +1,12 @@
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from matplotlib.patches import FancyBboxPatch
+from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
 import numpy as np
 import seaborn as sns
 
 
 BOX_LABEL_FONT_SIZE = 20
-BOX_CONTENT_FONT_SIZE = 16
+BOX_CONTENT_FONT_SIZE = 18
 
 # Set seaborn poster theme
 sns.set_theme(style="white", context="poster")
@@ -41,7 +41,7 @@ positions = {
 arrow_start = (0.1, 0.1)
 arrow_end = (8., 8.)
 ax.annotate('', xy=arrow_end, xytext=arrow_start,
-            arrowprops=dict(arrowstyle='->', lw=2, color='gray', alpha=0.4),
+            arrowprops=dict(arrowstyle='->', lw=2, color='#B8B8B8', alpha=0.5),
             zorder=0)
 
 # Plot main methods (outside boxes)
@@ -142,6 +142,13 @@ ax.set_yticks([])
 # Remove top and right spines
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
+
+# Add arrow tips to the axes using seaborn's despine with offset
+sns.despine(ax=ax, left=False, bottom=False, offset=0, trim=False)
+ax.spines['left'].set_position(('data', 0))
+ax.spines['bottom'].set_position(('data', 0))
+ax.spines['left'].set_visible(True)
+ax.spines['bottom'].set_visible(True)
 
 # Set aspect ratio to be equal
 ax.set_aspect('equal')
