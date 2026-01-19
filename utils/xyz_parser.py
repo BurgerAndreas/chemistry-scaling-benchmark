@@ -1,6 +1,7 @@
 """
 XYZ file parser for molecular structures.
 """
+
 import numpy as np
 from typing import Tuple, List
 
@@ -18,7 +19,7 @@ def parse_xyz(xyz_file: str) -> Tuple[List[str], np.ndarray, int]:
         - coordinates: numpy array of shape (natoms, 3) with coordinates in Angstrom
         - natoms: Number of atoms
     """
-    with open(xyz_file, 'r') as f:
+    with open(xyz_file, "r") as f:
         lines = f.readlines()
 
     # First line is number of atoms

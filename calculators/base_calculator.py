@@ -1,6 +1,7 @@
 """
 Base calculator abstract class.
 """
+
 from abc import ABC, abstractmethod
 from typing import Dict, Any
 from utils.xyz_parser import parse_xyz
@@ -61,7 +62,7 @@ class BaseCalculator(ABC):
             Dictionary with method_category, method_name, basis_set
         """
         return {
-            'method_category': self.method_category,
-            'method_name': self.method_name,
-            'basis_set': self.basis_set
+            "method_category": self.method_category,
+            "method_name": self.method_name,
+            "basis_set": self.basis_set,
         }

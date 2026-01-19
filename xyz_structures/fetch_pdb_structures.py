@@ -44,9 +44,9 @@ def search_pdb_by_residue_count(min_res, max_res, limit=20):
                             "from": min_res,
                             "to": max_res,
                             "include_lower": True,
-                            "include_upper": True
-                        }
-                    }
+                            "include_upper": True,
+                        },
+                    },
                 },
                 {
                     "type": "terminal",
@@ -54,24 +54,18 @@ def search_pdb_by_residue_count(min_res, max_res, limit=20):
                     "parameters": {
                         "attribute": "rcsb_entry_info.polymer_entity_count_protein",
                         "operator": "equals",
-                        "value": 1
-                    }
-                }
-            ]
+                        "value": 1,
+                    },
+                },
+            ],
         },
         "return_type": "entry",
         "request_options": {
-            "paginate": {
-                "start": 0,
-                "rows": limit
-            },
+            "paginate": {"start": 0, "rows": limit},
             "sort": [
-                {
-                    "sort_by": "rcsb_entry_info.resolution_combined",
-                    "direction": "asc"
-                }
-            ]
-        }
+                {"sort_by": "rcsb_entry_info.resolution_combined", "direction": "asc"}
+            ],
+        },
     }
 
     try:
@@ -113,7 +107,7 @@ def download_pdb_file(pdb_id):
     try:
         response = requests.get(url, timeout=60)
         if response.status_code == 200:
-            return gzip.decompress(response.content).decode('utf-8')
+            return gzip.decompress(response.content).decode("utf-8")
     except:
         pass
 
@@ -127,9 +121,9 @@ def pdb_to_xyz(pdb_content, title="molecule", include_hydrogens=True):
     """
     atoms = []
 
-    for line in pdb_content.split('\n'):
+    for line in pdb_content.split("\n"):
         # Only use ATOM records (polymer), skip HETATM (waters, ligands)
-        if not line.startswith('ATOM'):
+        if not line.startswith("ATOM"):
             continue
 
         try:
@@ -141,14 +135,14 @@ def pdb_to_xyz(pdb_content, title="molecule", include_hydrogens=True):
             element = line[76:78].strip()
             if not element:
                 atom_name = line[12:16].strip()
-                element = ''.join(c for c in atom_name[:2] if c.isalpha())
+                element = "".join(c for c in atom_name[:2] if c.isalpha())
                 if len(element) > 1:
                     element = element[0].upper() + element[1].lower()
                 else:
                     element = element.upper()
 
             # Skip hydrogens if not wanted
-            if not include_hydrogens and element == 'H':
+            if not include_hydrogens and element == "H":
                 continue
 
             if element:
@@ -163,7 +157,7 @@ def pdb_to_xyz(pdb_content, title="molecule", include_hydrogens=True):
     for elem, x, y, z in atoms:
         lines.append(f"{elem:2s} {x:12.6f} {y:12.6f} {z:12.6f}")
 
-    return '\n'.join(lines)
+    return "\n".join(lines)
 
 
 def find_structure_for_target(target, tolerance=10):
@@ -214,7 +208,7 @@ def find_structure_for_target(target, tolerance=10):
                 time.sleep(0.3)
                 continue
 
-            actual_atoms = int(xyz_content.split('\n')[0])
+            actual_atoms = int(xyz_content.split("\n")[0])
             print(f"{actual_atoms} atoms")
 
             if abs(actual_atoms - target) <= tolerance:
@@ -231,15 +225,15 @@ def main():
     results = {}
     found_atoms = set()  # Track what we've already found to avoid duplicates
 
-    print("="*70)
+    print("=" * 70)
     print("FETCHING STRUCTURES FROM RCSB PROTEIN DATA BANK")
     print("Target: 100-1000 atoms in steps of 10")
-    print("="*70)
+    print("=" * 70)
 
     for target in TARGET_ATOMS:
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"TARGET: {target} atoms")
-        print('='*60)
+        print("=" * 60)
 
         xyz_content, pdb_id, title, actual_atoms = find_structure_for_target(target)
 
@@ -261,11 +255,11 @@ def main():
         time.sleep(0.3)
 
     # Summary
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("SUMMARY OF SAVED XYZ FILES")
-    print("="*80)
+    print("=" * 80)
     print(f"{'Target':>6} | {'Actual':>6} | {'PDB ID':<8} | Description")
-    print("-"*80)
+    print("-" * 80)
 
     found = 0
     for target in TARGET_ATOMS:

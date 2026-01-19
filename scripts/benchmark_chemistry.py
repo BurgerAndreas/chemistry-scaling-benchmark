@@ -5,6 +5,7 @@ Computational Chemistry Benchmarking System
 Benchmarks various computational chemistry methods (force fields, tight binding,
 HF, DFT, MP2, CCSD, CCSD(T), FCI) across molecular structures of varying sizes.
 """
+
 import argparse
 import os
 import glob
@@ -42,7 +43,9 @@ class BenchmarkRunner:
         # Value: max natoms that timed out
         self.timeout_thresholds = {}
 
-    def should_skip(self, method_category: str, method_name: str, basis_set: str, natoms: int) -> bool:
+    def should_skip(
+        self, method_category: str, method_name: str, basis_set: str, natoms: int
+    ) -> bool:
         """
         Determine if calculation should be skipped based on timeout history and predefined limits.
 
@@ -57,9 +60,9 @@ class BenchmarkRunner:
         """
         # Predefined limits
         predefined_limits = {
-            'FCI': 20,
-            'CCSD(T)': 50,
-            'CCSD': 100,
+            "FCI": 20,
+            "CCSD(T)": 50,
+            "CCSD": 100,
         }
 
         # Check predefined limits
@@ -76,7 +79,9 @@ class BenchmarkRunner:
 
         return False
 
-    def update_timeout_threshold(self, method_category: str, method_name: str, basis_set: str, natoms: int):
+    def update_timeout_threshold(
+        self, method_category: str, method_name: str, basis_set: str, natoms: int
+    ):
         """
         Update timeout threshold after a timeout occurs.
 
@@ -93,7 +98,9 @@ class BenchmarkRunner:
             # Keep the minimum (most conservative)
             self.timeout_thresholds[key] = min(self.timeout_thresholds[key], natoms)
 
-    def run_calculation(self, calculator, xyz_file: str, molecule_file: str, natoms: int) -> Dict[str, Any]:
+    def run_calculation(
+        self, calculator, xyz_file: str, molecule_file: str, natoms: int
+    ) -> Dict[str, Any]:
         """
         Run a single calculation with timeout.
 
@@ -109,42 +116,46 @@ class BenchmarkRunner:
         method_info = calculator.get_method_info()
 
         # Run with timeout
-        timeout_result = run_with_timeout(calculator.calculate, self.timeout_sec, xyz_file)
+        timeout_result = run_with_timeout(
+            calculator.calculate, self.timeout_sec, xyz_file
+        )
 
         # Build result dictionary
         result = {
-            'timestamp': datetime.now().isoformat(),
-            'method_category': method_info['method_category'],
-            'method_name': method_info['method_name'],
-            'basis_set': method_info['basis_set'],
-            'molecule_file': molecule_file,
-            'natoms': natoms,
-            'success': timeout_result['success'],
-            'time_seconds': timeout_result['time_seconds'],
-            'peak_memory_mb': timeout_result['peak_memory_mb'],
-            'nbasis': '',
-            'energy_hartree': '',
-            'error_message': ''
+            "timestamp": datetime.now().isoformat(),
+            "method_category": method_info["method_category"],
+            "method_name": method_info["method_name"],
+            "basis_set": method_info["basis_set"],
+            "molecule_file": molecule_file,
+            "natoms": natoms,
+            "success": timeout_result["success"],
+            "time_seconds": timeout_result["time_seconds"],
+            "peak_memory_mb": timeout_result["peak_memory_mb"],
+            "nbasis": "",
+            "energy_hartree": "",
+            "error_message": "",
         }
 
-        if timeout_result['success']:
-            calc_result = timeout_result['result']
-            result['success'] = calc_result['success']
-            if calc_result['success']:
-                result['energy_hartree'] = calc_result.get('energy_hartree', '')
-                result['nbasis'] = calc_result.get('nbasis', '')
+        if timeout_result["success"]:
+            calc_result = timeout_result["result"]
+            result["success"] = calc_result["success"]
+            if calc_result["success"]:
+                result["energy_hartree"] = calc_result.get("energy_hartree", "")
+                result["nbasis"] = calc_result.get("nbasis", "")
             else:
-                result['error_message'] = calc_result.get('error_message', '')
+                result["error_message"] = calc_result.get("error_message", "")
         else:
-            result['error_message'] = timeout_result.get('error_message', 'UNKNOWN_ERROR')
+            result["error_message"] = timeout_result.get(
+                "error_message", "UNKNOWN_ERROR"
+            )
 
             # Update timeout threshold if timeout occurred
-            if result['error_message'] == 'TIMEOUT':
+            if result["error_message"] == "TIMEOUT":
                 self.update_timeout_threshold(
-                    method_info['method_category'],
-                    method_info['method_name'],
-                    method_info['basis_set'],
-                    natoms
+                    method_info["method_category"],
+                    method_info["method_name"],
+                    method_info["basis_set"],
+                    natoms,
                 )
 
         return result
@@ -182,8 +193,19 @@ class BenchmarkRunner:
             calculations.append((calc, xyz_file, natoms))
 
         # HF, DFT, MP2, CCSD, CCSD(T), FCI with multiple basis sets
-        basis_sets = ['STO-3G', '6-31G(d)', 'cc-pVDZ']
-        methods = ['RHF', 'SVWN', 'PBE', 'TPSS', 'B3LYP', 'wB97X', 'MP2', 'CCSD', 'CCSD(T)', 'FCI']
+        basis_sets = ["STO-3G", "6-31G(d)", "cc-pVDZ"]
+        methods = [
+            "RHF",
+            "SVWN",
+            "PBE",
+            "TPSS",
+            "B3LYP",
+            "wB97X",
+            "MP2",
+            "CCSD",
+            "CCSD(T)",
+            "FCI",
+        ]
 
         for method in methods:
             for basis in basis_sets:
@@ -203,10 +225,10 @@ class BenchmarkRunner:
 
             # Check if should skip
             if self.should_skip(
-                method_info['method_category'],
-                method_info['method_name'],
-                method_info['basis_set'],
-                natoms
+                method_info["method_category"],
+                method_info["method_name"],
+                method_info["basis_set"],
+                natoms,
             ):
                 skipped += 1
                 continue
@@ -217,7 +239,7 @@ class BenchmarkRunner:
             # Write result
             self.writer.write_result(result)
 
-            if result['success']:
+            if result["success"]:
                 succeeded += 1
             else:
                 failed += 1
@@ -236,46 +258,42 @@ def main():
         description="Benchmark computational chemistry methods"
     )
     parser.add_argument(
-        '--molecules',
+        "--molecules",
         type=str,
-        default='xyz_structures',
-        help='Directory containing XYZ molecule files (default: xyz_structures)'
+        default="xyz_structures",
+        help="Directory containing XYZ molecule files (default: xyz_structures)",
     )
     parser.add_argument(
-        '--output',
+        "--output",
         type=str,
         default=None,
-        help='Output CSV file (default: results/results_{timeout}.csv)'
+        help="Output CSV file (default: results/results_{timeout}.csv)",
     )
     parser.add_argument(
-        '--timeout',
+        "--timeout",
         type=float,
         default=600.0,
-        help='Timeout in seconds per calculation (default: 600)'
+        help="Timeout in seconds per calculation (default: 600)",
     )
     parser.add_argument(
-        '--test-mode',
-        action='store_true',
-        help='Test mode: run on single molecule'
+        "--test-mode", action="store_true", help="Test mode: run on single molecule"
     )
     parser.add_argument(
-        '--molecule',
-        type=str,
-        help='Single molecule file for test mode'
+        "--molecule", type=str, help="Single molecule file for test mode"
     )
 
     args = parser.parse_args()
 
     # Set default output file if not specified
     if args.output is None:
-        os.makedirs('results', exist_ok=True)
-        args.output = f'results/results_{int(args.timeout)}.csv'
+        os.makedirs("results", exist_ok=True)
+        args.output = f"results/results_{int(args.timeout)}.csv"
 
     # Find molecule files
     if args.test_mode and args.molecule:
         molecule_files = [args.molecule]
     else:
-        molecule_pattern = os.path.join(args.molecules, '*.xyz')
+        molecule_pattern = os.path.join(args.molecules, "*.xyz")
         molecule_files = glob.glob(molecule_pattern)
 
         if not molecule_files:
@@ -291,5 +309,5 @@ def main():
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     exit(main())

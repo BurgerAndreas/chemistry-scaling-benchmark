@@ -1,6 +1,7 @@
 """
 Timeout runner with memory tracking for calculations.
 """
+
 import multiprocessing as mp
 import psutil
 import time
@@ -8,7 +9,9 @@ from typing import Callable, Dict, Any, Tuple
 import traceback
 
 
-def _memory_monitor(pid: int, memory_queue: mp.Queue, stop_event: mp.Event, sample_interval: float = 0.1):
+def _memory_monitor(
+    pid: int, memory_queue: mp.Queue, stop_event: mp.Event, sample_interval: float = 0.1
+):
     """
     Monitor memory usage of a process.
 
@@ -35,7 +38,9 @@ def _memory_monitor(pid: int, memory_queue: mp.Queue, stop_event: mp.Event, samp
         memory_queue.put(peak_memory_mb)
 
 
-def _run_calculation_worker(calc_func: Callable, args: Tuple, kwargs: Dict, result_queue: mp.Queue):
+def _run_calculation_worker(
+    calc_func: Callable, args: Tuple, kwargs: Dict, result_queue: mp.Queue
+):
     """
     Worker function to run calculation in separate process.
 
@@ -47,14 +52,16 @@ def _run_calculation_worker(calc_func: Callable, args: Tuple, kwargs: Dict, resu
     """
     try:
         result = calc_func(*args, **kwargs)
-        result_queue.put(('success', result))
+        result_queue.put(("success", result))
     except Exception as e:
         error_msg = f"{type(e).__name__}: {str(e)}"
         tb = traceback.format_exc()
-        result_queue.put(('error', error_msg, tb))
+        result_queue.put(("error", error_msg, tb))
 
 
-def run_with_timeout(calc_func: Callable, timeout_sec: float, *args, **kwargs) -> Dict[str, Any]:
+def run_with_timeout(
+    calc_func: Callable, timeout_sec: float, *args, **kwargs
+) -> Dict[str, Any]:
     """
     Run a calculation function with timeout and memory tracking.
 
@@ -80,8 +87,7 @@ def run_with_timeout(calc_func: Callable, timeout_sec: float, *args, **kwargs) -
 
     # Start calculation process
     calc_process = mp.Process(
-        target=_run_calculation_worker,
-        args=(calc_func, args, kwargs, result_queue)
+        target=_run_calculation_worker, args=(calc_func, args, kwargs, result_queue)
     )
 
     start_time = time.time()
@@ -89,8 +95,7 @@ def run_with_timeout(calc_func: Callable, timeout_sec: float, *args, **kwargs) -
 
     # Start memory monitor
     monitor_process = mp.Process(
-        target=_memory_monitor,
-        args=(calc_process.pid, memory_queue, stop_event)
+        target=_memory_monitor, args=(calc_process.pid, memory_queue, stop_event)
     )
     monitor_process.start()
 
@@ -119,10 +124,10 @@ def run_with_timeout(calc_func: Callable, timeout_sec: float, *args, **kwargs) -
             peak_memory_mb = memory_queue.get()
 
         return {
-            'success': False,
-            'time_seconds': timeout_sec,
-            'peak_memory_mb': peak_memory_mb,
-            'error_message': 'TIMEOUT'
+            "success": False,
+            "time_seconds": timeout_sec,
+            "peak_memory_mb": peak_memory_mb,
+            "error_message": "TIMEOUT",
         }
 
     # Process completed, stop monitor
@@ -140,29 +145,29 @@ def run_with_timeout(calc_func: Callable, timeout_sec: float, *args, **kwargs) -
     # Get result
     if not result_queue.empty():
         result_data = result_queue.get()
-        if result_data[0] == 'success':
+        if result_data[0] == "success":
             return {
-                'success': True,
-                'time_seconds': elapsed_time,
-                'peak_memory_mb': peak_memory_mb,
-                'result': result_data[1]
+                "success": True,
+                "time_seconds": elapsed_time,
+                "peak_memory_mb": peak_memory_mb,
+                "result": result_data[1],
             }
         else:
             # Error occurred
             error_msg = result_data[1]
-            tb = result_data[2] if len(result_data) > 2 else ''
+            tb = result_data[2] if len(result_data) > 2 else ""
             return {
-                'success': False,
-                'time_seconds': elapsed_time,
-                'peak_memory_mb': peak_memory_mb,
-                'error_message': error_msg,
-                'traceback': tb
+                "success": False,
+                "time_seconds": elapsed_time,
+                "peak_memory_mb": peak_memory_mb,
+                "error_message": error_msg,
+                "traceback": tb,
             }
     else:
         # No result available (unexpected)
         return {
-            'success': False,
-            'time_seconds': elapsed_time,
-            'peak_memory_mb': peak_memory_mb,
-            'error_message': 'UNKNOWN_ERROR'
+            "success": False,
+            "time_seconds": elapsed_time,
+            "peak_memory_mb": peak_memory_mb,
+            "error_message": "UNKNOWN_ERROR",
         }

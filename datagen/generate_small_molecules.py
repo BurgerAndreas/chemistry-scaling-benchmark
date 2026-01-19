@@ -7,14 +7,15 @@ import os
 
 # Define molecules with their SMILES and expected atom count
 MOLECULES = [
-    (3, "O", "water"),                    # H2O
-    (4, "N", "ammonia"),                  # NH3
-    (5, "C", "methane"),                  # CH4
-    (6, "CO", "methanol"),                # CH3OH
-    (7, "CN", "methylamine"),             # CH3NH2
-    (8, "CC", "ethane"),                  # C2H6
-    (9, "CCO", "ethanol"),                # C2H5OH
+    (3, "O", "water"),  # H2O
+    (4, "N", "ammonia"),  # NH3
+    (5, "C", "methane"),  # CH4
+    (6, "CO", "methanol"),  # CH3OH
+    (7, "CN", "methylamine"),  # CH3NH2
+    (8, "CC", "ethane"),  # C2H6
+    (9, "CCO", "ethanol"),  # C2H5OH
 ]
+
 
 def generate_xyz(smiles, natoms, name):
     """Generate XYZ file from SMILES string."""
@@ -57,6 +58,7 @@ def generate_xyz(smiles, natoms, name):
 
     return "\n".join(xyz_lines)
 
+
 def main():
     output_dir = "xyz_structures"
     os.makedirs(output_dir, exist_ok=True)
@@ -73,11 +75,12 @@ def main():
         xyz_content = generate_xyz(smiles, natoms, name)
 
         if xyz_content:
-            with open(filepath, 'w') as f:
+            with open(filepath, "w") as f:
                 f.write(xyz_content)
             print(f"  ✓ Created {filename}")
         else:
             print(f"  ✗ Failed to create {filename}")
+
 
 if __name__ == "__main__":
     main()

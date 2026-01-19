@@ -1,6 +1,7 @@
 """
 CSV results writer for benchmark data.
 """
+
 import csv
 import os
 from datetime import datetime
@@ -23,23 +24,23 @@ class ResultsWriter:
         self.csv_file = csv_file
         self.lock = threading.Lock()
         self.fieldnames = [
-            'timestamp',
-            'method_category',
-            'method_name',
-            'basis_set',
-            'molecule_file',
-            'natoms',
-            'success',
-            'time_seconds',
-            'peak_memory_mb',
-            'nbasis',
-            'energy_hartree',
-            'error_message'
+            "timestamp",
+            "method_category",
+            "method_name",
+            "basis_set",
+            "molecule_file",
+            "natoms",
+            "success",
+            "time_seconds",
+            "peak_memory_mb",
+            "nbasis",
+            "energy_hartree",
+            "error_message",
         ]
 
         # Create file with header if it doesn't exist
         if not os.path.exists(csv_file):
-            with open(csv_file, 'w', newline='') as f:
+            with open(csv_file, "w", newline="") as f:
                 writer = csv.DictWriter(f, fieldnames=self.fieldnames)
                 writer.writeheader()
 
@@ -52,13 +53,13 @@ class ResultsWriter:
         """
         with self.lock:
             # Ensure all required fields are present
-            row = {field: result.get(field, '') for field in self.fieldnames}
+            row = {field: result.get(field, "") for field in self.fieldnames}
 
             # Add timestamp if not present
-            if not row['timestamp']:
-                row['timestamp'] = datetime.now().isoformat()
+            if not row["timestamp"]:
+                row["timestamp"] = datetime.now().isoformat()
 
-            with open(self.csv_file, 'a', newline='') as f:
+            with open(self.csv_file, "a", newline="") as f:
                 writer = csv.DictWriter(f, fieldnames=self.fieldnames)
                 writer.writerow(row)
 
@@ -73,6 +74,6 @@ class ResultsWriter:
             return []
 
         with self.lock:
-            with open(self.csv_file, 'r') as f:
+            with open(self.csv_file, "r") as f:
                 reader = csv.DictReader(f)
                 return list(reader)

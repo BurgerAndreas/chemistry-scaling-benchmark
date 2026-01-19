@@ -40,8 +40,8 @@ def search_pdb_single_chain(min_res, max_res, limit=30):
                     "parameters": {
                         "attribute": "rcsb_entry_info.deposited_polymer_monomer_count",
                         "operator": "range",
-                        "value": {"from": min_res, "to": max_res}
-                    }
+                        "value": {"from": min_res, "to": max_res},
+                    },
                 },
                 {
                     "type": "terminal",
@@ -49,13 +49,13 @@ def search_pdb_single_chain(min_res, max_res, limit=30):
                     "parameters": {
                         "attribute": "rcsb_entry_info.polymer_entity_count",
                         "operator": "equals",
-                        "value": 1
-                    }
-                }
-            ]
+                        "value": 1,
+                    },
+                },
+            ],
         },
         "return_type": "entry",
-        "request_options": {"paginate": {"start": 0, "rows": limit}}
+        "request_options": {"paginate": {"start": 0, "rows": limit}},
     }
     try:
         response = requests.post(url, json=query, timeout=30)
@@ -94,8 +94,8 @@ def get_pdb_title(pdb_id):
 def pdb_to_xyz(pdb_content, title="molecule"):
     """Convert PDB to XYZ (only ATOM records)."""
     atoms = []
-    for line in pdb_content.split('\n'):
-        if not line.startswith('ATOM'):
+    for line in pdb_content.split("\n"):
+        if not line.startswith("ATOM"):
             continue
         try:
             x = float(line[30:38].strip())
@@ -104,7 +104,7 @@ def pdb_to_xyz(pdb_content, title="molecule"):
             element = line[76:78].strip()
             if not element:
                 atom_name = line[12:16].strip()
-                element = ''.join(c for c in atom_name[:2] if c.isalpha())
+                element = "".join(c for c in atom_name[:2] if c.isalpha())
                 if len(element) > 1:
                     element = element[0].upper() + element[1].lower()
                 else:
@@ -120,7 +120,7 @@ def pdb_to_xyz(pdb_content, title="molecule"):
     lines = [str(len(atoms)), title]
     for elem, x, y, z in atoms:
         lines.append(f"{elem:2s} {x:12.6f} {y:12.6f} {z:12.6f}")
-    return '\n'.join(lines)
+    return "\n".join(lines)
 
 
 def find_for_target(target, max_tolerance=20):
@@ -150,10 +150,12 @@ def find_for_target(target, max_tolerance=20):
                 if not xyz_content:
                     continue
 
-                actual_atoms = int(xyz_content.split('\n')[0])
+                actual_atoms = int(xyz_content.split("\n")[0])
 
                 if abs(actual_atoms - target) <= tolerance:
-                    print(f"  Found: {pdb_id} with {actual_atoms} atoms (tolerance: {tolerance})")
+                    print(
+                        f"  Found: {pdb_id} with {actual_atoms} atoms (tolerance: {tolerance})"
+                    )
                     return xyz_content, pdb_id, title, actual_atoms
 
                 time.sleep(0.1)
@@ -167,7 +169,9 @@ def main():
     results = {}
 
     for target in MISSING_TARGETS:
-        xyz_content, pdb_id, title, actual_atoms = find_for_target(target, max_tolerance=25)
+        xyz_content, pdb_id, title, actual_atoms = find_for_target(
+            target, max_tolerance=25
+        )
 
         if xyz_content:
             filename = f"molecule_{target:04d}atoms.xyz"
@@ -183,9 +187,9 @@ def main():
         time.sleep(0.3)
 
     # Summary
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("GAP FILLING SUMMARY")
-    print("="*70)
+    print("=" * 70)
     found = sum(1 for v in results.values() if v is not None)
     print(f"Found {found}/{len(MISSING_TARGETS)} missing structures")
 

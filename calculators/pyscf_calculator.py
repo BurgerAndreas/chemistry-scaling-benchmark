@@ -1,6 +1,7 @@
 """
 PySCF calculator for HF, DFT, MP2, CCSD, CCSD(T), and FCI methods.
 """
+
 from typing import Dict, Any
 from pyscf import gto, scf, dft, mp, cc, fci
 from utils.xyz_parser import xyz_to_pyscf_format
@@ -14,16 +15,16 @@ class PySCFCalculator(BaseCalculator):
 
     # Map method names to their categories
     METHOD_CATEGORIES = {
-        'RHF': 'HF',
-        'SVWN': 'DFT',
-        'PBE': 'DFT',
-        'TPSS': 'DFT',
-        'B3LYP': 'DFT',
-        'wB97X': 'DFT',
-        'MP2': 'MP2',
-        'CCSD': 'CCSD',
-        'CCSD(T)': 'CCSD(T)',
-        'FCI': 'FCI'
+        "RHF": "HF",
+        "SVWN": "DFT",
+        "PBE": "DFT",
+        "TPSS": "DFT",
+        "B3LYP": "DFT",
+        "wB97X": "DFT",
+        "MP2": "MP2",
+        "CCSD": "CCSD",
+        "CCSD(T)": "CCSD(T)",
+        "FCI": "FCI",
     }
 
     def __init__(self, method_name: str, basis_set: str):
@@ -42,7 +43,7 @@ class PySCFCalculator(BaseCalculator):
         super().__init__(
             method_category=method_category,
             method_name=method_name,
-            basis_set=basis_set
+            basis_set=basis_set,
         )
 
     def calculate(self, xyz_file: str) -> Dict[str, Any]:
@@ -66,7 +67,7 @@ class PySCFCalculator(BaseCalculator):
             mol = gto.Mole()
             mol.atom = mol_str
             mol.basis = self.basis_set
-            mol.unit = 'Angstrom'
+            mol.unit = "Angstrom"
             mol.spin = 0  # Assume closed-shell
             mol.charge = 0
             mol.verbose = 0  # Suppress output
@@ -75,36 +76,33 @@ class PySCFCalculator(BaseCalculator):
             nbasis = mol.nao_nr()
 
             # Perform calculation based on method
-            if self.method_name == 'RHF':
+            if self.method_name == "RHF":
                 energy = self._calculate_rhf(mol)
-            elif self.method_name in ['SVWN', 'PBE', 'TPSS', 'B3LYP', 'wB97X']:
+            elif self.method_name in ["SVWN", "PBE", "TPSS", "B3LYP", "wB97X"]:
                 energy = self._calculate_dft(mol)
-            elif self.method_name == 'MP2':
+            elif self.method_name == "MP2":
                 energy = self._calculate_mp2(mol)
-            elif self.method_name == 'CCSD':
+            elif self.method_name == "CCSD":
                 energy = self._calculate_ccsd(mol)
-            elif self.method_name == 'CCSD(T)':
+            elif self.method_name == "CCSD(T)":
                 energy = self._calculate_ccsd_t(mol)
-            elif self.method_name == 'FCI':
+            elif self.method_name == "FCI":
                 energy = self._calculate_fci(mol)
             else:
                 return {
-                    'success': False,
-                    'error_message': f'Method not implemented: {self.method_name}'
+                    "success": False,
+                    "error_message": f"Method not implemented: {self.method_name}",
                 }
 
             return {
-                'success': True,
-                'energy_hartree': energy,
-                'nbasis': nbasis,
-                'error_message': ''
+                "success": True,
+                "energy_hartree": energy,
+                "nbasis": nbasis,
+                "error_message": "",
             }
 
         except Exception as e:
-            return {
-                'success': False,
-                'error_message': f"{type(e).__name__}: {str(e)}"
-            }
+            return {"success": False, "error_message": f"{type(e).__name__}: {str(e)}"}
 
     def _calculate_rhf(self, mol) -> float:
         """Calculate RHF energy."""
@@ -121,11 +119,11 @@ class PySCFCalculator(BaseCalculator):
         """Calculate DFT energy."""
         # Map method names to PySCF functional names
         functional_map = {
-            'SVWN': 'SVWN',
-            'PBE': 'PBE',
-            'TPSS': 'TPSS',
-            'B3LYP': 'B3LYP',
-            'wB97X': 'WB97X'
+            "SVWN": "SVWN",
+            "PBE": "PBE",
+            "TPSS": "TPSS",
+            "B3LYP": "B3LYP",
+            "wB97X": "WB97X",
         }
 
         functional = functional_map[self.method_name]

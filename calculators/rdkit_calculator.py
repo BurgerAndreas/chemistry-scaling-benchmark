@@ -1,6 +1,7 @@
 """
 RDKit calculator for UFF force field.
 """
+
 from typing import Dict, Any
 from rdkit import Chem
 from rdkit.Chem import AllChem, rdDetermineBonds
@@ -14,9 +15,7 @@ class RDKitCalculator(BaseCalculator):
 
     def __init__(self):
         super().__init__(
-            method_category="force_field",
-            method_name="UFF",
-            basis_set="N/A"
+            method_category="force_field", method_name="UFF", basis_set="N/A"
         )
 
     def calculate(self, xyz_file: str) -> Dict[str, Any]:
@@ -31,17 +30,14 @@ class RDKitCalculator(BaseCalculator):
         """
         try:
             # Read XYZ file
-            with open(xyz_file, 'r') as f:
+            with open(xyz_file, "r") as f:
                 xyz_block = f.read()
 
             # Parse XYZ into RDKit molecule
             mol = Chem.MolFromXYZBlock(xyz_block)
 
             if mol is None:
-                return {
-                    'success': False,
-                    'error_message': 'Failed to parse XYZ file'
-                }
+                return {"success": False, "error_message": "Failed to parse XYZ file"}
 
             # Determine connectivity
             rdDetermineBonds.DetermineBonds(mol, charge=0)
@@ -54,8 +50,8 @@ class RDKitCalculator(BaseCalculator):
 
             if ff is None:
                 return {
-                    'success': False,
-                    'error_message': 'Failed to create UFF force field'
+                    "success": False,
+                    "error_message": "Failed to create UFF force field",
                 }
 
             # Optimize geometry
@@ -68,14 +64,11 @@ class RDKitCalculator(BaseCalculator):
             energy_hartree = energy_kcal / 627.509
 
             return {
-                'success': True,
-                'energy_hartree': energy_hartree,
-                'nbasis': 'N/A',
-                'error_message': ''
+                "success": True,
+                "energy_hartree": energy_hartree,
+                "nbasis": "N/A",
+                "error_message": "",
             }
 
         except Exception as e:
-            return {
-                'success': False,
-                'error_message': f"{type(e).__name__}: {str(e)}"
-            }
+            return {"success": False, "error_message": f"{type(e).__name__}: {str(e)}"}
