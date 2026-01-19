@@ -1,0 +1,16 @@
+[project]
+name = "scaling"
+version = "0.0.0"
+requires-python = ">=3.11"
+dependencies = [
+    "matplotlib",
+    "seaborn",
+    "pillow",
+    "numpy",
+    "tqdm",
+    "rdkit==2025.9.3",
+    "pyscf",
+    "xtb",
+    "psutil",
+    "requests",
+]

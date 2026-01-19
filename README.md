@@ -52,22 +52,22 @@ uv pip install pyscf xtb rdkit psutil tqdm numpy typing_extensions
 
 ### Full Benchmark Run
 ```bash
-uv run benchmark_chemistry.py
+uv run scripts/benchmark_chemistry.py
 ```
 
 ### Custom Options
 ```bash
 # Specify molecule directory
-uv run benchmark_chemistry.py --molecules xyz_structures
+uv run scripts/benchmark_chemistry.py --molecules xyz_structures
 
 # Custom output file
-uv run benchmark_chemistry.py --output my_results.csv
+uv run scripts/benchmark_chemistry.py --output my_results.csv
 
 # Adjust timeout (in seconds)
-uv run benchmark_chemistry.py --timeout 600
+uv run scripts/benchmark_chemistry.py --timeout 600
 
 # Test mode on single molecule
-uv run benchmark_chemistry.py --test-mode --molecule xyz_structures/molecule_010atoms.xyz
+uv run scripts/benchmark_chemistry.py --test-mode --molecule xyz_structures/molecule_010atoms.xyz
 ```
 
 ## Output Format
@@ -91,7 +91,9 @@ Results are saved to CSV with the following columns:
 
 ```
 /ssd/Code/scaling/
-├── benchmark_chemistry.py          # Main orchestrator
+├── scripts/
+│   ├── benchmark_chemistry.py      # Main orchestrator
+│   └── figure_tradeoff.py          # Generate tradeoff plots
 ├── calculators/
 │   ├── __init__.py
 │   ├── base_calculator.py          # Abstract base class
@@ -103,7 +105,13 @@ Results are saved to CSV with the following columns:
 │   ├── timeout_runner.py           # Timeout + memory tracking
 │   ├── xyz_parser.py               # Parse XYZ files
 │   └── results_writer.py           # Thread-safe CSV writing
-└── benchmark_results.csv           # Output data
+├── datagen/
+│   ├── fetch_molecules.py          # Fetch molecules from databases
+│   └── generate_small_molecules.py # Generate small test molecules
+├── xyz_structures/                 # Molecular structure files (.xyz)
+└── results/
+    ├── results_{timeout}.csv       # Output data
+    └── *.png                       # Generated plots
 ```
 
 ## Performance Characteristics

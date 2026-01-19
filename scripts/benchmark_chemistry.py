@@ -244,8 +244,8 @@ def main():
     parser.add_argument(
         '--output',
         type=str,
-        default='benchmark_results.csv',
-        help='Output CSV file (default: benchmark_results.csv)'
+        default=None,
+        help='Output CSV file (default: results/results_{timeout}.csv)'
     )
     parser.add_argument(
         '--timeout',
@@ -265,6 +265,11 @@ def main():
     )
 
     args = parser.parse_args()
+
+    # Set default output file if not specified
+    if args.output is None:
+        os.makedirs('results', exist_ok=True)
+        args.output = f'results/results_{int(args.timeout)}.csv'
 
     # Find molecule files
     if args.test_mode and args.molecule:
