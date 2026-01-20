@@ -59,8 +59,8 @@ for method in main_methods:
     ax.plot(
         x,
         y,
-        "o",
-        markersize=12,
+        "s",
+        markersize=8,
         color="#2E86AB",
         zorder=3,
     )
@@ -68,15 +68,21 @@ for method in main_methods:
         x,
         y,
         method,
+        # ha="right",
+        # va="bottom",
         ha="center",
         va="center",
         fontsize=OUTSIDE_BOX_FONT_SIZE,
         bbox=dict(
             boxstyle="round,pad=0.2",
-            facecolor="white",
-            edgecolor="#2E86AB",
+            facecolor="#D4E5EE",
+            edgecolor="none",
+            # facecolor="white",
+            # edgecolor="#2E86AB",
             linewidth=1.5,
+            alpha=1.0,
         ),
+        color="#2E86AB",
         zorder=4,
     )
 
@@ -95,7 +101,8 @@ dft_box = FancyBboxPatch(
     linestyle="",
     linewidth=2,
     edgecolor="#A23B72",
-    facecolor="#F18F01",
+    # facecolor="#F18F01",
+    facecolor="#A23B72",
     alpha=0.15,
     zorder=1,
 )
@@ -144,7 +151,7 @@ ab_box = FancyBboxPatch(
     linestyle="",
     linewidth=2,
     edgecolor="#C73E1D",
-    facecolor="#6A994E",
+    facecolor="#C73E1D",
     alpha=0.15,
     zorder=1,
 )
@@ -186,8 +193,8 @@ ax.set_xlabel("Accuracy →")
 # ax.set_title('Accuracy vs Computational Cost in Computational Chemistry Methods', pad=20)
 
 # Set limits and remove ticks
-ax.set_xlim(0, TOP+0.1)
-ax.set_ylim(0, TOP+0.1)
+ax.set_xlim(0, TOP + 0.1)
+ax.set_ylim(0, TOP + 0.1)
 ax.set_xticks([])
 ax.set_yticks([])
 
