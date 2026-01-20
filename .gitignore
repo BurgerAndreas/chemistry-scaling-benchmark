@@ -38,9 +38,9 @@ env/
 Thumbs.db
 
 # Results
-*.csv
-results_*.csv
-benchmark_results.csv
+#*.csv
+#results_*.csv
+#benchmark_results.csv
 
 # Logs
 *.log
