@@ -30,6 +30,7 @@ class ResultsWriter:
             "basis_set",
             "molecule_file",
             "natoms",
+            "repetition",
             "success",
             "time_seconds",
             "peak_memory_mb",

@@ -99,7 +99,7 @@ class BenchmarkRunner:
             self.timeout_thresholds[key] = min(self.timeout_thresholds[key], natoms)
 
     def run_calculation(
-        self, calculator, xyz_file: str, molecule_file: str, natoms: int
+        self, calculator, xyz_file: str, molecule_file: str, natoms: int, repetition: int
     ) -> Dict[str, Any]:
         """
         Run a single calculation with timeout.
@@ -109,6 +109,7 @@ class BenchmarkRunner:
             xyz_file: Path to XYZ file
             molecule_file: Molecule filename (for logging)
             natoms: Number of atoms
+            repetition: Repetition number
 
         Returns:
             Result dictionary
@@ -128,6 +129,7 @@ class BenchmarkRunner:
             "basis_set": method_info["basis_set"],
             "molecule_file": molecule_file,
             "natoms": natoms,
+            "repetition": repetition,
             "success": timeout_result["success"],
             "time_seconds": timeout_result["time_seconds"],
             "peak_memory_mb": timeout_result["peak_memory_mb"],
@@ -214,41 +216,46 @@ class BenchmarkRunner:
                     calculations.append((calc, xyz_file, natoms))
 
         # Run all calculations with progress bar
-        print(f"Running {len(calculations)} calculations...")
+        num_calculations = len(calculations)
+        total_runs = num_calculations * 3
+        print(f"Running {total_runs} calculations ({num_calculations} unique calculations, 3 repetitions each)...")
         skipped = 0
         failed = 0
         succeeded = 0
 
         for calc, xyz_file, natoms in tqdm(calculations, desc="Benchmarking"):
-            method_info = calc.get_method_info()
-            molecule_file = os.path.basename(xyz_file)
+            for repetition in range(1, 4):  # Run 3 times
+                method_info = calc.get_method_info()
+                molecule_file = os.path.basename(xyz_file)
 
-            # Check if should skip
-            if self.should_skip(
-                method_info["method_category"],
-                method_info["method_name"],
-                method_info["basis_set"],
-                natoms,
-            ):
-                skipped += 1
-                continue
+                # Check if should skip
+                if self.should_skip(
+                    method_info["method_category"],
+                    method_info["method_name"],
+                    method_info["basis_set"],
+                    natoms,
+                ):
+                    skipped += 1
+                    continue
 
-            # Run calculation
-            result = self.run_calculation(calc, xyz_file, molecule_file, natoms)
+                # Run calculation
+                result = self.run_calculation(
+                    calc, xyz_file, molecule_file, natoms, repetition
+                )
 
-            # Write result
-            self.writer.write_result(result)
+                # Write result
+                self.writer.write_result(result)
 
-            if result["success"]:
-                succeeded += 1
-            else:
-                failed += 1
+                if result["success"]:
+                    succeeded += 1
+                else:
+                    failed += 1
 
         print(f"\nBenchmark complete!")
         print(f"  Succeeded: {succeeded}")
         print(f"  Failed: {failed}")
         print(f"  Skipped: {skipped}")
-        print(f"  Total: {len(calculations)}")
+        print(f"  Total: {total_runs}")
         print(f"\nResults written to: {self.output_csv}")
 
 
