@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH --nodes=1
+#SBATCH --gpus-per-node=1
 #SBATCH --time=24:00:00
 #SBATCH --job-name=chem
 #SBATCH --output=/scratch/aburger/outslurm/slurm-%j.txt
 #SBATCH --error=/scratch/aburger/outslurm/slurm-%j.txt
 
 # option	short option	meaning	notes
-# # --gpus-per-node=1
 # # --nodes	-N	number of nodes	Recommended to always include this
 # # --ntasks-per-node		number of tasks for srun/mpirun to launch per node	Prefer this over --ntasks
 # # --ntasks	-n	number of tasks for srun/mpirun to launch	
