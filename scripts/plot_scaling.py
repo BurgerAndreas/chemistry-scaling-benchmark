@@ -7,6 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+from matplotlib.ticker import LogLocator
 
 # Set seaborn poster theme
 sns.set_theme(style="whitegrid", context="poster")
@@ -108,6 +109,10 @@ ax1.set_xscale('log')
 ax1.set_yscale('log')
 ax1.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=14)
 ax1.grid(True, alpha=0.3, which='both')
+ax1.xaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10)))
+ax1.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10)))
+ax1.tick_params(axis='both', which='minor', length=4)
+ax1.tick_params(axis='both', which='major', length=8)
 
 # Plot 2: Memory scaling
 ax2 = axes[1]
@@ -126,6 +131,10 @@ ax2.set_xscale('log')
 ax2.set_yscale('log')
 ax2.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=14)
 ax2.grid(True, alpha=0.3, which='both')
+ax2.xaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10)))
+ax2.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10)))
+ax2.tick_params(axis='both', which='minor', length=4)
+ax2.tick_params(axis='both', which='major', length=8)
 
 plt.tight_layout()
 plt.savefig('results/scaling_all_methods.png', dpi=150, bbox_inches='tight')
@@ -155,6 +164,10 @@ for category in df_plot_data['method_category'].unique():
     axes[0].set_yscale('log')
     axes[0].legend()
     axes[0].grid(True, alpha=0.3, which='both')
+    axes[0].xaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10)))
+    axes[0].yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10)))
+    axes[0].tick_params(axis='both', which='minor', length=4)
+    axes[0].tick_params(axis='both', which='major', length=8)
 
     # Memory plot
     for i, method in enumerate(methods_cat):
@@ -172,6 +185,10 @@ for category in df_plot_data['method_category'].unique():
     axes[1].set_yscale('log')
     axes[1].legend()
     axes[1].grid(True, alpha=0.3, which='both')
+    axes[1].xaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10)))
+    axes[1].yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10)))
+    axes[1].tick_params(axis='both', which='minor', length=4)
+    axes[1].tick_params(axis='both', which='major', length=8)
 
     plt.tight_layout()
     plt.savefig(f'results/scaling_{category}.png', dpi=150, bbox_inches='tight')

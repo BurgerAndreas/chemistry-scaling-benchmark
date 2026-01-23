@@ -7,10 +7,13 @@ HF, DFT, MP2, CCSD, CCSD(T), FCI) across molecular structures of varying sizes.
 """
 
 import argparse
+import csv
 import os
 import glob
+import logging
+import sys
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Set, Tuple
 from tqdm import tqdm
 
 from calculators.rdkit_calculator import RDKitCalculator
@@ -21,27 +24,98 @@ from utils.results_writer import ResultsWriter
 from utils.xyz_parser import parse_xyz
 
 
+def setup_logging(log_file: str):
+    """Setup logging to both file and console."""
+    # Create logger
+    logger = logging.getLogger('benchmark')
+    logger.setLevel(logging.INFO)
+
+    # Clear any existing handlers
+    logger.handlers.clear()
+
+    # File handler
+    file_handler = logging.FileHandler(log_file, mode='a')
+    file_handler.setLevel(logging.INFO)
+    file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(file_formatter)
+
+    # Console handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+    console_formatter = logging.Formatter('%(message)s')
+    console_handler.setFormatter(console_formatter)
+
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+
+    return logger
+
+
 class BenchmarkRunner:
     """
     Main benchmark orchestrator.
     """
 
-    def __init__(self, output_csv: str, timeout_sec: float = 600.0):
+    def __init__(self, output_csv: str, timeout_sec: float = 600.0, logger=None):
         """
         Initialize benchmark runner.
 
         Args:
             output_csv: Path to output CSV file
             timeout_sec: Timeout in seconds for each calculation
+            logger: Logger instance for output
         """
         self.output_csv = output_csv
         self.timeout_sec = timeout_sec
         self.writer = ResultsWriter(output_csv)
+        self.logger = logger or logging.getLogger('benchmark')
 
         # Track timeout thresholds for skip logic
         # Key: (method_category, method_name, basis_set)
         # Value: max natoms that timed out
         self.timeout_thresholds = {}
+
+        # Load existing results to skip completed calculations
+        # Key: (method_name, basis_set, molecule_file, repetition)
+        self.completed_calculations: Set[Tuple[str, str, str, int]] = set()
+        self._load_existing_results()
+
+    def _load_existing_results(self):
+        """Load existing results from CSV to skip completed calculations."""
+        if not os.path.exists(self.output_csv):
+            self.logger.info(f"No existing results file found at {self.output_csv}")
+            return
+
+        try:
+            with open(self.output_csv, 'r', newline='') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    key = (
+                        row['method_name'],
+                        row['basis_set'],
+                        row['molecule_file'],
+                        int(row['repetition'])
+                    )
+                    self.completed_calculations.add(key)
+
+                    # Also restore timeout thresholds from failed calculations
+                    if row.get('error_message') == 'TIMEOUT':
+                        self.update_timeout_threshold(
+                            row['method_category'],
+                            row['method_name'],
+                            row['basis_set'],
+                            int(row['natoms'])
+                        )
+
+            self.logger.info(f"Loaded {len(self.completed_calculations)} existing results from {self.output_csv}")
+        except Exception as e:
+            self.logger.warning(f"Could not load existing results: {e}")
+
+    def is_calculation_completed(
+        self, method_name: str, basis_set: str, molecule_file: str, repetition: int
+    ) -> bool:
+        """Check if a calculation has already been completed."""
+        return (method_name, basis_set, molecule_file, repetition) in self.completed_calculations
 
     def should_skip(
         self, method_category: str, method_name: str, basis_set: str, natoms: int
@@ -176,7 +250,7 @@ class BenchmarkRunner:
                 _, _, natoms = parse_xyz(xyz_file)
                 molecules.append((xyz_file, natoms))
             except Exception as e:
-                print(f"Warning: Could not parse {xyz_file}: {e}")
+                self.logger.warning(f"Could not parse {xyz_file}: {e}")
                 continue
 
         molecules.sort(key=lambda x: x[1])
@@ -218,7 +292,7 @@ class BenchmarkRunner:
         # Run all calculations with progress bar
         num_calculations = len(calculations)
         total_runs = num_calculations * 3
-        print(f"Running {total_runs} calculations ({num_calculations} unique calculations, 3 repetitions each)...")
+        self.logger.info(f"Running {total_runs} calculations ({num_calculations} unique calculations, 3 repetitions each)...")
         skipped = 0
         failed = 0
         succeeded = 0
@@ -228,15 +302,30 @@ class BenchmarkRunner:
                 method_info = calc.get_method_info()
                 molecule_file = os.path.basename(xyz_file)
 
-                # Check if should skip
+                # Check if calculation already completed
+                if self.is_calculation_completed(
+                    method_info["method_name"],
+                    method_info["basis_set"],
+                    molecule_file,
+                    repetition,
+                ):
+                    self.logger.debug(f"ALREADY DONE: {method_info['method_name']}/{method_info['basis_set']} on {molecule_file} rep {repetition}")
+                    skipped += 1
+                    continue
+
+                # Check if should skip due to timeout/size limits
                 if self.should_skip(
                     method_info["method_category"],
                     method_info["method_name"],
                     method_info["basis_set"],
                     natoms,
                 ):
+                    self.logger.debug(f"SKIP: {method_info['method_name']}/{method_info['basis_set']} on {molecule_file} ({natoms} atoms) rep {repetition}")
                     skipped += 1
                     continue
+
+                # Log start of calculation
+                self.logger.info(f"START: {method_info['method_name']}/{method_info['basis_set']} on {molecule_file} ({natoms} atoms) rep {repetition}")
 
                 # Run calculation
                 result = self.run_calculation(
@@ -246,17 +335,21 @@ class BenchmarkRunner:
                 # Write result
                 self.writer.write_result(result)
 
+                # Log result
                 if result["success"]:
+                    self.logger.info(f"SUCCESS: {method_info['method_name']}/{method_info['basis_set']} on {molecule_file} - {result['time_seconds']:.2f}s, {result['peak_memory_mb']:.0f}MB")
                     succeeded += 1
                 else:
+                    error_msg = result.get("error_message", "UNKNOWN")
+                    self.logger.warning(f"FAILED: {method_info['method_name']}/{method_info['basis_set']} on {molecule_file} - {error_msg}")
                     failed += 1
 
-        print(f"\nBenchmark complete!")
-        print(f"  Succeeded: {succeeded}")
-        print(f"  Failed: {failed}")
-        print(f"  Skipped: {skipped}")
-        print(f"  Total: {total_runs}")
-        print(f"\nResults written to: {self.output_csv}")
+        self.logger.info("\nBenchmark complete!")
+        self.logger.info(f"  Succeeded: {succeeded}")
+        self.logger.info(f"  Failed: {failed}")
+        self.logger.info(f"  Skipped: {skipped}")
+        self.logger.info(f"  Total: {total_runs}")
+        self.logger.info(f"\nResults written to: {self.output_csv}")
 
 
 def main():
@@ -287,7 +380,7 @@ def main():
     )
     parser.add_argument(
         "--molecule", type=str, help="Single molecule file for test mode"
-    )
+    )   
 
     args = parser.parse_args()
 
@@ -295,6 +388,13 @@ def main():
     if args.output is None:
         os.makedirs("results", exist_ok=True)
         args.output = f"results/results_{int(args.timeout)}.csv"
+
+    # Setup logging
+    log_file = args.output.replace('.csv', '.log')
+    logger = setup_logging(log_file)
+    logger.info(f"Starting benchmark with timeout={args.timeout}s")
+    logger.info(f"Output CSV: {args.output}")
+    logger.info(f"Log file: {log_file}")
 
     # Find molecule files
     if args.test_mode and args.molecule:
@@ -304,13 +404,13 @@ def main():
         molecule_files = glob.glob(molecule_pattern)
 
         if not molecule_files:
-            print(f"Error: No XYZ files found in {args.molecules}")
+            logger.error(f"No XYZ files found in {args.molecules}")
             return 1
 
-    print(f"Found {len(molecule_files)} molecule files")
+    logger.info(f"Found {len(molecule_files)} molecule files")
 
     # Run benchmark
-    runner = BenchmarkRunner(args.output, args.timeout)
+    runner = BenchmarkRunner(args.output, args.timeout, logger)
     runner.run_benchmark(molecule_files)
 
     return 0
