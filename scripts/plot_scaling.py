@@ -16,8 +16,14 @@ sns.set_theme(style="whitegrid", context="poster")
 results_file = "results/results_600.csv"
 df = pd.read_csv(results_file)
 
+# Exclude rows with a non-empty error_message
+df = df[df['error_message'].isna() | (df['error_message'] == '')]
+
 # Filter only successful calculations
 df_success = df[df['success'] == True].copy()
+
+# Exclude all rows where the time is the max time (600)
+df_success = df_success[df_success['time_seconds'] < 600]
 
 print(f"Total calculations: {len(df)}")
 print(f"Successful: {len(df_success)}")
@@ -38,108 +44,87 @@ df_plot_data = df_success.groupby(['method_label', 'natoms']).agg(
     method_category=('method_category', 'first')
 ).reset_index()
 
-
-# For combined plot: select one basis set per method
-# Prefer 6-31G(d), fallback to STO-3G, then any available
-def select_one_basis(df_in):
-    result = []
-    for method_name in df_in['method_name'].unique():
-        method_data = df_in[df_in['method_name'] == method_name]
-        # If basis set is NaN (for force fields, tight binding), include all
-        if method_data['basis_set'].isna().any():
-            result.append(method_data[method_data['basis_set'].isna()])
-        # Prefer 6-31G(d)
-        elif '6-31G(d)' in method_data['basis_set'].values:
-            result.append(method_data[method_data['basis_set'] == '6-31G(d)'])
-        # Fallback to STO-3G
-        elif 'STO-3G' in method_data['basis_set'].values:
-            result.append(method_data[method_data['basis_set'] == 'STO-3G'])
-        # Otherwise take first available
-        else:
-            if not method_data.empty:
-                basis = method_data['basis_set'].iloc[0]
-                result.append(method_data[method_data['basis_set'] == basis])
-    if not result:
-        return pd.DataFrame()
-    return pd.concat(result)
-
-df_combined = select_one_basis(df_plot_data)
-
 # Define method order by computational cost (ladder to heaven)
-method_order = [
-    'UFF',
-    'GFN2-xTB',
-    'RHF/6-31G(d)',
-    'SVWN/6-31G(d)',      # LDA
-    'PBE/6-31G(d)',       # GGA
-    'TPSS/6-31G(d)',      # Meta-GGA
-    'B3LYP/6-31G(d)',     # Hybrid
-    'wB97X/6-31G(d)',     # Range-separated hybrid
-    'MP2/6-31G(d)',
-    'CCSD/6-31G(d)',
-    'CCSD(T)/6-31G(d)',
-    'FCI/6-31G(d)',
-]
+# basis_set = '6-31G(d)'
+for basis_set in ['STO-3G', '6-31G(d)']:
+    method_order = [
+        'UFF',
+        'GFN2-xTB',
+        # f'RHF/{basis_set}',
+        # f'SVWN/{basis_set}',      # LDA
+        # f'PBE/{basis_set}',       # GGA
+        # f'TPSS/{basis_set}',      # Meta-GGA
+        # f'B3LYP/{basis_set}',     # Hybrid
+        f'wB97X/{basis_set}',     # Range-separated hybrid
+        f'MP2/{basis_set}',
+        f'CCSD/{basis_set}',
+        # 'CCSD(T)/{basis_set}',
+        f'FCI/{basis_set}',
+    ]
 
-# Create combined plot
-fig, axes = plt.subplots(2, 1, figsize=(16, 20))
+    # Filter to only include STO-3G or None (NaN) basis sets
+    df_combined = df_plot_data[df_plot_data['basis_set'].isna() | (df_plot_data['basis_set'] == basis_set)]
 
-# Get methods present in data, ordered by cost
-available_methods = df_combined['method_label'].unique()
-methods_combined = [m for m in method_order if m in available_methods]
-# Add any methods not in the predefined order (shouldn't happen but safe)
-methods_combined += [m for m in available_methods if m not in method_order]
+    # Create combined plot
+    fig, axes = plt.subplots(2, 1, figsize=(16, 20))
 
-palette = sns.color_palette("husl", n_colors=len(methods_combined))
+    # Get methods present in data, ordered by cost
+    available_methods = df_combined['method_label'].unique()
+    methods_combined = [m for m in method_order if m in available_methods]
+    # Add any methods not in the predefined order (shouldn't happen but safe)
+    # methods_combined += [m for m in available_methods if m not in method_order]
+    palette = sns.color_palette("husl", n_colors=len(methods_combined))
 
-# Plot 1: Time scaling
-ax1 = axes[0]
-for i, method in enumerate(methods_combined):
-    data = df_combined[df_combined['method_label'] == method].sort_values('natoms')
-    ax1.scatter(data['natoms'], data['time_seconds'],
-               label=method, s=150, alpha=0.7, color=palette[i])
-    if len(data) > 1:
-        ax1.plot(data['natoms'], data['time_seconds'],
-                alpha=0.4, linewidth=2, color=palette[i])
+    # Plot 1: Time scaling
+    ax1 = axes[0]
+    for i, method in enumerate(methods_combined):
+        data = df_combined[df_combined['method_label'] == method].sort_values('natoms')
+        ax1.scatter(data['natoms'], data['time_seconds'],
+                label=method, s=150, alpha=0.7, color=palette[i])
+        if len(data) > 1:
+            ax1.plot(data['natoms'], data['time_seconds'],
+                    alpha=0.4, linewidth=2, color=palette[i])
 
-ax1.set_xlabel('Number of Atoms')
-ax1.set_ylabel('Time (seconds)')
-ax1.set_title('Computational Time Scaling (Averaged)', fontweight='bold', pad=20)
-ax1.set_xscale('log')
-ax1.set_yscale('log')
-ax1.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=14)
-ax1.grid(True, alpha=0.3, which='both')
-ax1.xaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10)))
-ax1.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10)))
-ax1.tick_params(axis='both', which='minor', length=4)
-ax1.tick_params(axis='both', which='major', length=8)
+    ax1.set_xlabel('Number of Atoms')
+    ax1.set_ylabel('Time (seconds)')
+    ax1.set_title('Computational Time Scaling (Averaged)', fontweight='bold', pad=20)
+    ax1.set_xscale('log')
+    ax1.set_yscale('log')
+    ax1.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=14)
+    ax1.grid(True, alpha=0.3, which='both')
+    ax1.xaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10)))
+    ax1.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10)))
+    ax1.tick_params(axis='both', which='minor', length=4)
+    ax1.tick_params(axis='both', which='major', length=8)
 
-# Plot 2: Memory scaling
-ax2 = axes[1]
-for i, method in enumerate(methods_combined):
-    data = df_combined[df_combined['method_label'] == method].sort_values('natoms')
-    ax2.scatter(data['natoms'], data['peak_memory_mb'],
-               label=method, s=150, alpha=0.7, color=palette[i])
-    if len(data) > 1:
-        ax2.plot(data['natoms'], data['peak_memory_mb'],
-                alpha=0.4, linewidth=2, color=palette[i])
+    # Plot 2: Memory scaling
+    ax2 = axes[1]
+    for i, method in enumerate(methods_combined):
+        data = df_combined[df_combined['method_label'] == method].sort_values('natoms')
+        ax2.scatter(data['natoms'], data['peak_memory_mb'],
+                label=method, s=150, alpha=0.7, color=palette[i])
+        if len(data) > 1:
+            ax2.plot(data['natoms'], data['peak_memory_mb'],
+                    alpha=0.4, linewidth=2, color=palette[i])
 
-ax2.set_xlabel('Number of Atoms')
-ax2.set_ylabel('Peak Memory (MB)')
-ax2.set_title('Memory Usage Scaling (Averaged)', fontweight='bold', pad=20)
-ax2.set_xscale('log')
-ax2.set_yscale('log')
-ax2.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=14)
-ax2.grid(True, alpha=0.3, which='both')
-ax2.xaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10)))
-ax2.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10)))
-ax2.tick_params(axis='both', which='minor', length=4)
-ax2.tick_params(axis='both', which='major', length=8)
+    ax2.set_xlabel('Number of Atoms')
+    ax2.set_ylabel('Peak Memory (MB)')
+    ax2.set_title('Memory Usage Scaling (Averaged)', fontweight='bold', pad=20)
+    ax2.set_xscale('log')
+    ax2.set_yscale('log')
+    ax2.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=14)
+    ax2.grid(True, alpha=0.3, which='both')
+    ax2.xaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10)))
+    ax2.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10)))
+    ax2.tick_params(axis='both', which='minor', length=4)
+    ax2.tick_params(axis='both', which='major', length=8)
 
-plt.tight_layout()
-plt.savefig('results/scaling_all_methods.png', dpi=150, bbox_inches='tight')
-print(f"\nSaved: results/scaling_all_methods.png")
+    plt.tight_layout()
+    plt.savefig(f'results/scaling_{basis_set}.png', dpi=150, bbox_inches='tight')
+    print(f"\nSaved: results/scaling_{basis_set}.png")
 
+
+############################################################################################
 # Plot by method category
 for category in df_plot_data['method_category'].unique():
     df_cat = df_plot_data[df_plot_data['method_category'] == category]

@@ -6,6 +6,29 @@ Benchmarks various computational chemistry methods (force fields, tight binding,
 HF, DFT, MP2, CCSD, CCSD(T), FCI) across molecular structures of varying sizes.
 """
 
+# === GLOBAL BENCHMARK SETTINGS ===
+N_REPS = 1  # Number of repetitions for each calculation
+BENCHMARK_METHODS = [
+    # These methods all scale formally as $O(N^4)$ (or often $O(N^3)$ with efficient implementations)
+    # "RHF", # Restricted Hartree-Fock
+    # "SVWN", # LDA
+    # "PBE", # GGA
+    # "TPSS", # Meta-GGA
+    # "B3LYP", # Global Hybrid
+    "wB97X", # Range-separated Hybrid
+    # Higher scaling
+    "MP2",
+    "CCSD",
+    "CCSD(T)",
+    "FCI",
+]
+BENCHMARK_BASIS_SETS = [
+    # "STO-3G",
+    "6-31G(d)",
+    # "cc-pVDZ"
+]
+# =================================
+
 import argparse
 import csv
 import os
@@ -137,6 +160,7 @@ class BenchmarkRunner:
             "FCI": 20,
             "CCSD(T)": 50,
             "CCSD": 100,
+            "UFF": 100,  # Limiting UFF (RDKitCalculator) to 100 atoms
         }
 
         # Check predefined limits
@@ -219,11 +243,17 @@ class BenchmarkRunner:
                 result["energy_hartree"] = calc_result.get("energy_hartree", "")
                 result["nbasis"] = calc_result.get("nbasis", "")
             else:
-                result["error_message"] = calc_result.get("error_message", "")
+                err_msg = calc_result.get("error_message", "")
+                # Replace all , and ; with a whitespace
+                if isinstance(err_msg, str):
+                    err_msg = err_msg.replace(",", " ").replace(";", " ")
+                result["error_message"] = err_msg
         else:
-            result["error_message"] = timeout_result.get(
-                "error_message", "UNKNOWN_ERROR"
-            )
+            err_msg = timeout_result.get("error_message", "UNKNOWN_ERROR")
+            # Replace all , and ; with a whitespace
+            if isinstance(err_msg, str):
+                err_msg = err_msg.replace(",", " ").replace(";", " ")
+            result["error_message"] = err_msg
 
             # Update timeout threshold if timeout occurred
             if result["error_message"] == "TIMEOUT":
@@ -258,10 +288,11 @@ class BenchmarkRunner:
         # Define all calculations to run
         calculations = []
 
-        # Force field: UFF
+        # Force field: UFF (limit to natoms <= 100)
         for xyz_file, natoms in molecules:
-            calc = RDKitCalculator()
-            calculations.append((calc, xyz_file, natoms))
+            if natoms <= 100:
+                calc = RDKitCalculator()
+                calculations.append((calc, xyz_file, natoms))
 
         # Tight binding: GFN2-xTB
         for xyz_file, natoms in molecules:
@@ -269,36 +300,25 @@ class BenchmarkRunner:
             calculations.append((calc, xyz_file, natoms))
 
         # HF, DFT, MP2, CCSD, CCSD(T), FCI with multiple basis sets
-        basis_sets = ["STO-3G", "6-31G(d)", "cc-pVDZ"]
-        methods = [
-            "RHF",
-            "SVWN",
-            "PBE",
-            "TPSS",
-            "B3LYP",
-            "wB97X",
-            "MP2",
-            "CCSD",
-            "CCSD(T)",
-            "FCI",
-        ]
-
-        for method in methods:
-            for basis in basis_sets:
+        for method in BENCHMARK_METHODS:
+            for basis in BENCHMARK_BASIS_SETS:
                 for xyz_file, natoms in molecules:
                     calc = PySCFCalculator(method, basis)
                     calculations.append((calc, xyz_file, natoms))
 
         # Run all calculations with progress bar
         num_calculations = len(calculations)
-        total_runs = num_calculations * 3
-        self.logger.info(f"Running {total_runs} calculations ({num_calculations} unique calculations, 3 repetitions each)...")
+        total_runs = num_calculations * N_REPS
+        self.logger.info(f"Running {total_runs} calculations ({num_calculations} unique calculations, {N_REPS} repetitions each)...")
         skipped = 0
         failed = 0
         succeeded = 0
 
-        for calc, xyz_file, natoms in tqdm(calculations, desc="Benchmarking"):
-            for repetition in range(1, 4):  # Run 3 times
+        calc_counter = 0
+        total_calcs = len(calculations)
+        for calc, xyz_file, natoms in tqdm(calculations, desc="Benchmarking", total=total_calcs):
+            calc_counter += 1
+            for repetition in range(1, N_REPS + 1):  # Run N_REPS times
                 method_info = calc.get_method_info()
                 molecule_file = os.path.basename(xyz_file)
 
@@ -325,7 +345,7 @@ class BenchmarkRunner:
                     continue
 
                 # Log start of calculation
-                self.logger.info(f"START: {method_info['method_name']}/{method_info['basis_set']} on {molecule_file} ({natoms} atoms) rep {repetition}")
+                self.logger.info(f"START: {calc_counter}/{total_calcs} {method_info['method_name']}/{method_info['basis_set']} on {molecule_file} ({natoms} atoms) rep {repetition}")
 
                 # Run calculation
                 result = self.run_calculation(
@@ -416,5 +436,7 @@ def main():
     return 0
 
 
+if __name__ == "__main__":
+    exit(main())
 if __name__ == "__main__":
     exit(main())

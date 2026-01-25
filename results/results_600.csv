@@ -206,9 +206,6 @@ timestamp,method_category,method_name,basis_set,molecule_file,natoms,repetition,
 2026-01-20T17:59:54.071341,force_field,UFF,N/A,molecule_100atoms.xyz,100,1,True,0.10720086097717285,79.8828125,N/A,0.23074097216966594,
 2026-01-20T17:59:54.186509,force_field,UFF,N/A,molecule_100atoms.xyz,100,2,True,0.10664081573486328,79.8828125,N/A,0.23074097216966594,
 2026-01-20T17:59:54.301583,force_field,UFF,N/A,molecule_100atoms.xyz,100,3,True,0.10687017440795898,79.8828125,N/A,0.23074097216966594,
-2026-01-20T18:00:15.042764,force_field,UFF,N/A,molecule_0110atoms.xyz,104,1,True,20.680708408355713,84.3828125,N/A,0.04884206396774982,
-2026-01-20T18:00:35.785422,force_field,UFF,N/A,molecule_0110atoms.xyz,104,2,True,20.645678997039795,84.3828125,N/A,0.04884206396774982,
-2026-01-20T18:00:56.527432,force_field,UFF,N/A,molecule_0110atoms.xyz,104,3,True,20.652666568756104,84.3828125,N/A,0.04884206396774982,
 2026-01-20T18:00:56.644182,force_field,UFF,N/A,molecule_0100atoms.xyz,107,1,False,0.013954401016235352,79.8828125,,,"ValueError: Valence of atom 2 is 5, which is larger than the allowed maximum, 4"
 2026-01-20T18:00:56.759220,force_field,UFF,N/A,molecule_0100atoms.xyz,107,2,False,0.01381063461303711,79.8828125,,,"ValueError: Valence of atom 2 is 5, which is larger than the allowed maximum, 4"
 2026-01-20T18:00:56.874341,force_field,UFF,N/A,molecule_0100atoms.xyz,107,3,False,0.013940811157226562,79.8828125,,,"ValueError: Valence of atom 2 is 5, which is larger than the allowed maximum, 4"
